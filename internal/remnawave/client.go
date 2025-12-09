@@ -100,14 +100,18 @@ func (r *Client) DecreaseSubscription(ctx context.Context, telegramId int64, tra
 	case *remapi.NotFoundError:
 		return nil, errors.New("user in remnawave not found")
 	case *remapi.UsersResponse:
+		response := v.GetResponse()
+		if len(response) == 0 {
+			return nil, errors.New("user in remnawave not found")
+		}
 		var existingUser *remapi.User
-		for _, panelUser := range v.GetResponse() {
+		for _, panelUser := range response {
 			if strings.Contains(panelUser.Username, fmt.Sprintf("_%d", telegramId)) {
 				existingUser = &panelUser
 			}
 		}
 		if existingUser == nil {
-			existingUser = &v.GetResponse()[0]
+			existingUser = &response[0]
 		}
 		updatedUser, err := r.updateUser(ctx, existingUser, trafficLimit, days)
 		return &updatedUser.ExpireAt, err
@@ -127,14 +131,18 @@ func (r *Client) CreateOrUpdateUser(ctx context.Context, customerId int64, teleg
 	case *remapi.NotFoundError:
 		return r.createUser(ctx, customerId, telegramId, trafficLimit, days, isTrialUser)
 	case *remapi.UsersResponse:
+		response := v.GetResponse()
+		if len(response) == 0 {
+			return r.createUser(ctx, customerId, telegramId, trafficLimit, days, isTrialUser)
+		}
 		var existingUser *remapi.User
-		for _, panelUser := range v.GetResponse() {
+		for _, panelUser := range response {
 			if strings.Contains(panelUser.Username, fmt.Sprintf("_%d", telegramId)) {
 				existingUser = &panelUser
 			}
 		}
 		if existingUser == nil {
-			existingUser = &v.GetResponse()[0]
+			existingUser = &response[0]
 		}
 		return r.updateUser(ctx, existingUser, trafficLimit, days)
 	default:
